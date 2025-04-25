@@ -2,10 +2,3 @@ Option Explicit
 
 Public dictSomasCartao As New Dictionary
 Public dictExtrato As New Dictionary
-
-
-Sub Export_Mister()
-
-ExportacaoMister.Show
-
-End Sub
