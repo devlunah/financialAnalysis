@@ -1,0 +1,93 @@
+Sub Receb_Boleto()
+
+    Dim wsBoletos As Worksheet
+    Dim wsExtrato As Worksheet
+    Dim ultimaLinhaBoletos As Long
+    Dim ultimaLinhaExtrato As Long
+    Dim i As Long, j As Long, b As Long
+    Dim dataPrevista As Variant
+    Dim valorBoleto As Double, valorExt As Double
+    Dim totalPorData As Double
+    Dim dicDatas As Object
+    Dim historico As String, banco As String, historicoLiquidacao As String, SICOOB As String, SICREDI As String
+    Dim CONCILIADO As String
+    Dim datasBol As Date
+    Dim tolerancia As Double
+    Dim contador As Long
+    tolerancia = 0.04 
+
+    Set dicDatas = CreateObject("Scripting.Dictionary")
+    
+    On Error Resume Next
+    Set wsBoletos = ThisWorkbook.Sheets("BOLETODECOB")
+    Set wsExtrato = ThisWorkbook.Sheets("ExtratosBancarios")
+    On Error GoTo 0
+
+    ultimaLinhaBoletos = wsBoletos.Cells(wsBoletos.Rows.Count, "A").End(xlUp).Row
+    
+    For i = 3 To ultimaLinhaBoletos ' Supondo que os dados comecem na linha 2
+        dataPrevista = wsBoletos.Cells(i, "D").Value ' Coluna B contém a data prevista do boleto
+        valorBoleto = wsBoletos.Cells(i, "L").Value ' Coluna C contém o valor do boleto
+
+        If dicDatas.Exists(dataPrevista) Then
+            dicDatas(dataPrevista) = dicDatas(dataPrevista) + valorBoleto
+        Else
+            dicDatas.Add dataPrevista, valorBoleto
+        End If
+    Next i
+
+    ultimaLinhaExtrato = wsExtrato.Cells(wsExtrato.Rows.Count, "A").End(xlUp).Row
+    
+    contador = 1
+
+    For Each dataPrevista In dicDatas.Keys
+        totalPorData = dicDatas(dataPrevista)
+
+        For j = 10 To ultimaLinhaExtrato 
+            CONCILIADO = CStr(wsExtrato.Cells(j, "I").Value)
+            If CONCILIADO = "CONCILIADO" Then
+
+            Else
+            banco = wsExtrato.Cells(j, "A").Value
+            historico = wsExtrato.Cells(j, "F").Value 
+            historicoLiquidacao = ""
+            SICOOB = "CRÉD.LIQUIDAÇÃO COBRANÇA"
+            SICREDI = "LIQ.COBRANCA SIMPLES"
+            
+            If banco = "SICOOB" Then
+            historicoLiquidacao = SICOOB
+            ElseIf banco = "SICREDI" Then
+            historicoLiquidacao = SICREDI
+            Else
+             historicoLiquidacao = SICOOB
+            End If
+
+            If wsExtrato.Cells(j, "D").Value = dataPrevista And historico = historicoLiquidacao Then
+                'identif = wsExtrato.Cells(j, "E").Value
+                valorExt = CDbl(wsExtrato.Cells(j, "G").Value)
+                If Abs(CDbl(valorExt) - CDbl(totalPorData)) <= tolerancia Then
+                    wsExtrato.Cells(j, "I").Value = "CONCILIADO COM BOLETO"
+                    wsExtrato.Cells(j, "J").Value = "CONCILIAÇÃO BOLETO" & " " & "-" & " " & contador
+                    wsExtrato.Cells(j, 20).Value = wsExtrato.Cells(j, 1).Value
+                    datasBol = wsExtrato.Cells(j, "D").Value
+                    For b = 3 To ultimaLinhaBoletos
+                      
+                      If wsBoletos.Cells(b, "D") = datasBol Then
+                         wsBoletos.Cells(b, "N").Value = "CONCILIAÇÃO BOLETO" & " " & "-" & " " & contador
+                         wsBoletos.Cells(b, "Q").Value = totalPorData
+                         wsBoletos.Cells(b, "R").Value = "CONCILIADO COM EXTRATO"
+                      End If
+                    Next b
+                    
+                    Exit For 
+                End If
+            End If
+          End If
+        Next j
+        contador = contador + 1
+    Next dataPrevista
+    
+    MsgBox "Processo de conciliação concluído!"
+
+
+End Sub
