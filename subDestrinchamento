@@ -1,0 +1,146 @@
+Sub DestrincharExtratoComRecebimento()
+
+    Dim wsExt As Worksheet
+    Set wsExt = ThisWorkbook.Worksheets("ExtratosBancarios")
+
+    Dim wsCartao As Worksheet
+    Set wsCartao = ThisWorkbook.Worksheets("CIELORECEB")
+    
+    Dim wsBoleto As Worksheet
+    Set wsBoleto = ThisWorkbook.Worksheets("BOLETODECOB")
+    
+    Dim ultimaLinhaExt As Long
+    ultimaLinhaExt = wsExt.Cells(wsExt.Rows.Count, "A").End(xlUp).Row
+
+    Dim ultimaLinhaCartao As Long
+    ultimaLinhaCartao = wsCartao.Cells(wsCartao.Rows.Count, "A").End(xlUp).Row
+    
+    Dim ultimaLinhaBoleto As Long
+    ultimaLinhaBoleto = wsBoleto.Cells(wsBoleto.Rows.Count, "A").End(xlUp).Row
+    
+    Dim i As Long, j As Long, b As Long
+    Dim conciliacaoCartao As String, conciliacaoExt As String, conciliacaoBoleto As String, statusDestrinchamento As String
+    Dim valorCartao As Double, valorBoleto As Double
+    Dim x As Long
+    Dim z As Long
+    Dim cellsDestrinchada As Variant
+    
+    
+    x = 1000
+    
+    For i = 10 To ultimaLinhaExt + x
+
+        conciliacaoExt = wsExt.Cells(i, 10).Value
+        statusDestrinchamento = wsExt.Cells(i, 12).Value
+
+        If statusDestrinchamento = "Valor Destrinchado" Or statusDestrinchamento = "MONTANTE" Then
+        
+        Else
+        
+            For j = 3 To ultimaLinhaCartao
+                conciliacaoCartao = wsCartao.Cells(j, 14).Value
+                valorCartao = wsCartao.Cells(j, 6).Value
+                
+                If Not IsEmpty(wsCartao.Cells(j, 14).Value) Then
+                
+                    If conciliacaoExt = conciliacaoCartao Then
+                        wsExt.Rows(i + 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+                            
+                        wsExt.Cells(i + 1, 7).Value = valorCartao
+                        wsExt.Cells(i + 1, 1).Value = wsExt.Cells(i, 1).Value
+                        wsExt.Cells(i + 1, 4).Value = wsExt.Cells(i, 4).Value
+                        wsExt.Cells(i + 1, 5).Value = wsExt.Cells(i, 5).Value
+                        wsExt.Cells(i + 1, 6).Value = wsExt.Cells(i, 6).Value
+                        wsExt.Cells(i + 1, 8).Value = wsExt.Cells(i, 8).Value
+                        wsExt.Cells(i + 1, 9).Value = wsExt.Cells(i, 9).Value
+                        wsExt.Cells(i + 1, 10).Value = wsExt.Cells(i, 10).Value
+                        wsExt.Cells(i + 1, 12).Value = "Valor Destrinchado"
+                        wsExt.Cells(i + 1, 18).Value = wsCartao.Cells(j, 5).Value
+                        wsExt.Cells(i + 1, 20).Value = wsExt.Cells(i, 20).Value
+                        
+                        If Not IsEmpty(wsCartao.Cells(j, 15).Value) Then
+                        
+                            wsExt.Cells(i + 1, 11).Value = "NFS-e" & " " & wsCartao.Cells(j, 15).Value & " - " & wsCartao.Cells(j, 16).Value
+                            wsExt.Cells(i + 1, 19).Value = "CONCILIADO_CARTÃO"
+                        Else
+                        
+                            wsExt.Cells(i + 1, 11).Value = wsCartao.Cells(j, 15).Value & " - " & wsCartao.Cells(j, 16).Value
+                            wsExt.Cells(i + 1, 19).Value = "A CONCILIAR_CARTÃO"
+                            
+                        End If
+            
+                        wsExt.Range(wsExt.Cells(i + 1, 1), wsExt.Cells(i + 1, 12)).Interior.Color = RGB(255, 255, 0)
+                        
+                        If wsExt.Cells(i, 12).Interior.Color <> RGB(255, 255, 0) Then
+                            wsExt.Cells(i, 12).Value = "MONTANTE"
+                        End If
+
+                        
+                        i = i + 1
+                        
+                    End If
+                
+                Else
+                
+                End If
+                
+                
+            Next j
+            
+            For b = 3 To ultimaLinhaBoleto
+                conciliacaoBoleto = wsBoleto.Cells(b, 14).Value
+                valorBoleto = wsBoleto.Cells(b, 12).Value
+                
+                If Not IsEmpty(wsBoleto.Cells(b, 14).Value) Then
+                
+                    If conciliacaoBoleto = conciliacaoExt Then
+                        wsExt.Rows(i + 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+                        
+                        wsExt.Cells(i + 1, 7).Value = valorBoleto
+                        wsExt.Cells(i + 1, 1).Value = wsExt.Cells(i, 1).Value
+                        wsExt.Cells(i + 1, 4).Value = wsExt.Cells(i, 4).Value
+                        wsExt.Cells(i + 1, 5).Value = wsExt.Cells(i, 5).Value
+                        wsExt.Cells(i + 1, 6).Value = wsExt.Cells(i, 6).Value
+                        wsExt.Cells(i + 1, 8).Value = wsExt.Cells(i, 8).Value
+                        wsExt.Cells(i + 1, 9).Value = wsExt.Cells(i, 9).Value
+                        wsExt.Cells(i + 1, 10).Value = wsExt.Cells(i, 10).Value
+                        wsExt.Cells(i + 1, 12).Value = "Valor Destrinchado"
+                        wsExt.Cells(i + 1, 17).Value = wsBoleto.Cells(b, 8).Value
+                        wsExt.Cells(i + 1, 20).Value = wsExt.Cells(i, 1).Value
+                        
+                        If Not IsEmpty(wsBoleto.Cells(b, 15).Value) Then
+                        
+                            wsExt.Cells(i + 1, 11).Value = "NFS-e" & " " & wsBoleto.Cells(b, 15).Value & " - " & wsBoleto.Cells(b, 16).Value
+                            wsExt.Cells(i + 1, 19).Value = "CONCILIADO_BOLETO"
+                            
+                        Else
+                            wsExt.Cells(i + 1, 11).Value = wsBoleto.Cells(b, 15).Value & " - " & wsBoleto.Cells(b, 16).Value
+                            wsExt.Cells(i + 1, 19).Value = "A CONCILIAR_BOLETO"
+                        
+                        End If
+                        
+        
+                        wsExt.Range(wsExt.Cells(i + 1, 1), wsExt.Cells(i + 1, 12)).Interior.Color = RGB(255, 255, 0)
+                        
+                        If wsExt.Cells(i, 12).Interior.Color <> RGB(255, 255, 0) Then
+                            wsExt.Cells(i, 12).Value = "MONTANTE"
+                        Else
+                        End If
+
+                        i = i + 1
+                        
+                    End If
+                
+                Else
+                
+                End If
+            
+            Next b
+        
+        End If
+        
+    
+    Next i
+    
+
+End Sub
