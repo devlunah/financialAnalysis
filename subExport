@@ -1,5 +1,5 @@
-Sub Export_Mister()
+Sub Export_XLSX()
 
-ExportacaoMister.Show
+ExportacaoXLSX.Show
 
 End Sub
