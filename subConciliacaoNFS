@@ -1,0 +1,483 @@
+Sub Macro1()
+    Dim wsServico As Worksheet
+    Dim wsExtratos As Worksheet
+    Dim wsDH_NF_IMPORTAR As Worksheet
+    Dim ultimaLinhaServico As Long
+    Dim ultimaLinhaExtratos As Long
+    Dim i As Long, j As Long, b As Long, k As Long
+    Dim cpfCnpjServicoOrig As String
+    Dim razaoSocialServico As String
+    Dim razaoSocialServicoDisc As String
+    Dim dataServico As Date
+    Dim valorServico As Double
+    Dim valorLiquido As Double
+    Dim valorExtrato As Double
+    Dim dataExtrato As Date
+    Dim percCoincidencia As Double
+    Dim valorPermitido As Double
+    Dim threshold As Double
+    
+    threshold = 0.8  ' Definindo a similaridade mínima de 80%
+
+    ' Verificar se as planilhas existem corretamente
+    On Error GoTo ErrorHandler
+    Set wsServico = ThisWorkbook.Sheets("servicos")
+    Set wsExtratos = ThisWorkbook.Sheets("ExtratosBancarios")
+    Set wsBoletos = ThisWorkbook.Sheets("BOLETODECOB")
+    Set wsCartao = ThisWorkbook.Sheets("CIELORECEB")
+    
+    Set wsDH_NF_IMPORTAR = ThisWorkbook.Sheets("DH_NF_IMPORTAR")
+    
+    On Error GoTo 0
+    
+    ' Obtendo a última linha das duas planilhas
+    ultimaLinhaServico = wsServico.Cells(wsServico.Rows.Count, "C").End(xlUp).Row
+    ultimaLinhaExtratos = wsExtratos.Cells(wsExtratos.Rows.Count, "F").End(xlUp).Row
+    ultimaLinhaBoletos = wsBoletos.Cells(wsBoletos.Rows.Count, "A").End(xlUp).Row
+    ultimaLinhaCartao = wsCartao.Cells(wsCartao.Rows.Count, "A").End(xlUp).Row
+
+    ' Loop através da planilha "servico"
+    For i = 44 To ultimaLinhaServico ' Supondo que os dados comecem na linha 2
+        cpfCnpjServicoOrig = CStr(wsServico.Cells(i, "C").Value) ' Converter CPF/CNPJ para string
+        
+        
+        
+        
+        
+        
+        razaoSocialServico = CStr(wsServico.Cells(i, "D").Value) ' Supondo que a razão social está na coluna D
+        CONCILIADONF = CStr(wsServico.Cells(i, "Y").Value)
+        
+        ' If CONCILIADONF = "CONCILIADO" Then
+        '  GoTo ProximoRegistro
+        'End If
+        
+        
+        If razaoSocialServico Like "POSTAL SAÚDE *" Then
+           razaoSocialServico = "POSTAL SAUDE - CAIXA DE ASSISTENCIA"
+        End If
+        
+        If razaoSocialServico Like "COOPERATIVA DE SAUDE DOS SERVIDORES DO CORPO DE BOMBEIRO DO ACRE *" Then
+           razaoSocialServico = "CBSAUDE CORPO"
+        End If
+        
+        If razaoSocialServico Like "FUNDO DE SAUDE DA POLICIA MILITAR *" Then
+           razaoSocialServico = "PMAC FUNSAU"
+        End If
+        
+        If razaoSocialServico Like "FUNDO DE SAUDE DA POLICIA MILITAR DO ACRE" Then
+           razaoSocialServico = "FUNSAUDE PM ACRE"
+        End If
+        
+        If razaoSocialServico Like "UNIMED RIO BRANCO COOPERATIVA DE TRABALHO MEDICO LTDA" Then
+           razaoSocialServico = "UNIMED RIO BCO MED LTDA"
+        End If
+        
+        If razaoSocialServico Like "CAIXA DE ASSISTENCIA DOS FUNCIONARIOS DO BANCO DO BRASIL" Then
+           razaoSocialServico = "CASSI"
+        End If
+           ' 'CAIXA DE ASSISTENCIA DOS FUNCIONARIOS DO BANCO DO BRASIL'
+        
+        ' COMANDO DE FRONTEIRA
+        
+         If razaoSocialServico Like "COMANDO DE FRONTEIRA *" Then
+           razaoSocialServico = "COMANDO DE FRONTEIRA"
+        End If
+        
+        razaoSocialServico = UCase(razaoSocialServico)
+        valorServico = CDbl(wsServico.Cells(i, "F").Value) ' Valor do serviço
+        valorLiquido = CDbl(wsServico.Cells(i, "O").Value) ' Valor líquido do serviço
+        formaPgto = CStr(wsServico.Cells(i, "S").Value)
+        NOTA = wsServico.Cells(i, "A").Value
+        
+        ' Verificar se é CPF (11 dígitos) ou CNPJ (14 dígitos) e formatar
+     
+        
+        'wsServico.Cells(i, "B").NumberFormat = "dd/mm/yyyy" ' Supondo que a data esteja na coluna B
+        dataServico = DateValue(wsServico.Cells(i, "B").Value)
+        ' Checar se os valores estão preenchidos
+        If cpfCnpjServicoOrig <> "" And IsDate(dataServico) Then
+            
+         If CONCILIADONF Like "CONCILIADO*" Then
+          
+         Else
+               ' Loop através da planilha "Boleto"
+          If formaPgto = "Boleto" Then
+          
+                  For b = 3 To ultimaLinhaBoletos ' Supondo que os dados comecem na linha 2
+                       
+                        dataBoletoReceb = wsBoletos.Cells(b, "D").Value
+                        razaoM = UCase(razaoSocialServico)
+                        razaoBoletos = UCase(CStr(wsBoletos.Cells(b, "A").Value))
+                        valorRecebBoleto = CDbl(wsBoletos.Cells(b, "L").Value)
+                        valorBoletoOr = CDbl(wsBoletos.Cells(b, "G").Value)
+                          If razaoBoletos = razaoM And NOTA = 4823 Then
+                          End If
+                        If Len(razaoSocialServico) > 0 Then
+                          If IsDate(dataBoletoReceb) Then
+                            If Abs(DateDiff("d", dataServico, dataBoletoReceb)) <= 4 Then
+                                If razaoBoletos Like "*" & razaoM & "*" Then
+                                If IsEmpty(wsBoletos.Cells(b, "O").Value) Then
+                                If Not wsBoletos.Cells(b, "O").Value = NOTA Then
+                                  wsBoletos.Cells(b, "O").Value = NOTA
+                                  wsBoletos.Cells(b, "P").Value = razaoM
+                                  wsServico.Cells(i, "T").Value = dataBoletoReceb
+                                  wsServico.Cells(i, "U").Value = banco + " - Boleto"
+                                  wsServico.Cells(i, "V").Value = valorRecebBoleto
+                                  wsServico.Cells(i, "Y").Value = "CONCILIADO COM BOLETO"
+                                  wsServico.Cells(i, "Z").Value = NOTA
+                                  Exit For
+                                End If
+                                End If
+                                End If
+                           End If
+                        End If
+                      End If
+            
+                  Next b
+           
+          
+          
+             ' Loop através da planilha "Cartao"
+           
+           ElseIf formaPgto = "Cartão de Crédito" Or formaPgto = "Cartão de Débito" Or formaPgto = "CARTÃO DEBITO" Or formaPgto = "CARTÃO CREDITO" Then
+            
+             For c = 3 To ultimaLinhaCartao
+               forma = ""
+               If formaPgto Like "*Crédito*" Or formaPgto Like "*Credito*" Or formaPgto Like "*credito*" Or formaPgto Like "*CREDITO*" Then
+               forma = "Crédito"
+               
+               ElseIf formaPgto Like "*Débito*" Or formaPgto Like "*Debito*" Or formaPgto Like "*débito*" Or formaPgto Like "*DEBITO*" Then
+               forma = "Débito"
+               Else
+               forma = ""
+               End If
+               
+               
+               formCartao = wsCartao.Cells(c, "B").Value
+               dataVendaCartao = wsCartao.Cells(c, "I").Value
+               valorVenda = wsCartao.Cells(c, "D").Value
+               ValorRecebCartao = wsCartao.Cells(c, "F").Value
+               dataRecebCartao = wsCartao.Cells(c, "A").Value
+               razaoM = UCase(razaoSocialServico)
+               autorizacao = CStr(wsServico.Cells(i, "R").Value)
+               conciliadoNota = wsCartao.Cells(c, "O").Value
+                If NOTA = 22848 Then
+                  
+                    NOTA = 22848
+                  
+                 End If
+               
+               If Not conciliadoNota > 0 Or IsEmpty(conciliadoNota) Then
+               
+               
+                If autorizacao = CStr(wsCartao.Cells(c, "H").Value) Then
+                                  
+                                  wsServico.Cells(i, "T").Value = dataRecebCartao
+                                  wsServico.Cells(i, "U").Value = banco + " - Cartao"
+                                  wsServico.Cells(i, "V").Value = ValorRecebCartao
+                                  wsServico.Cells(i, "Y").Value = "CONCILIADO COM CARTAO"
+                                  wsServico.Cells(i, "Z").Value = wsCartao.Cells(c, "Q").Value
+                                  
+                                  wsCartao.Cells(c, "O").Value = NOTA
+                                  wsCartao.Cells(c, "P").Value = razaoM
+                                  wsCartao.Cells(c, "Q").Value = "conciliadoNota"
+                                  Exit For
+                                  
+                '  ElseIf IsEmpty(autorizacao) Or autorizacao = "" Then
+                  'If formCartao Like "*" & forma & "*" Then
+                   'If Abs(DateDiff("d", dataServico, dataVendaCartao)) <= 4 Then
+                   ' If (valorServico) >= (ValorRecebCartao - 1) And valorServico <= (valorVenda + 1) Then
+                    '
+                     '             wsServico.Cells(i, "T").Value = dataRecebCartao
+                      '            wsServico.Cells(i, "U").Value = banco + " - Cartao"
+                       '           wsServico.Cells(i, "V").Value = ValorRecebCartao
+                        '          wsServico.Cells(i, "Y").Value = "CONCILIADO COM CARTAO"
+                         '         wsServico.Cells(i, "Z").Value = wsCartao.Cells(c, "Q").Value
+                          '
+                           '       wsCartao.Cells(c, "M").Value = NOTA
+                            '      wsCartao.Cells(c, "N").Value = razaoM
+                             '
+                              '    Exit For
+               
+                     '  End If
+                     ' End If
+                    'End If
+                   End If
+                   
+                   
+               End If
+             Next c
+           
+                     
+           
+           'ElseIf formaPgto = "Cartão de Crédito" Or boleto = "Cartão de Débito" Then
+                      
+            ElseIf 1 = 1 Then
+    ' Loop através da planilha "ExtratosBancarios"
+    For j = 10 To ultimaLinhaExtratos ' Supondo que os dados comecem na linha 2
+        identificacao = wsExtratos.Cells(j, "E").Value
+        banco = wsExtratos.Cells(j, "A").Value
+        ConciliadoExt = wsExtratos.Cells(j, "I").Value
+        
+        cpfCnpjServico = "0000000000000000000"
+        
+        If banco = "SICOOB" Then
+         If Len(cpfCnpjServicoOrig) = 11 Then
+            ' Formatar CPF: ***.numeros.numeros-**
+            cpfCnpjServico = "***." & Mid(cpfCnpjServicoOrig, 4, 3) & "." & Mid(cpfCnpjServicoOrig, 7, 3) & "-**"
+        ElseIf Len(cpfCnpjServicoOrig) = 14 Then
+            ' Formatar CNPJ: 00.000.000/0000-00
+            cpfCnpjServico = Left(cpfCnpjServicoOrig, 2) & "." & Mid(cpfCnpjServicoOrig, 3, 3) & "." & Mid(cpfCnpjServicoOrig, 6, 3) & " " & Mid(cpfCnpjServicoOrig, 9, 4) & "-" & Right(cpfCnpjServicoOrig, 2)
+        End If
+        End If '' fim comparacao banco
+        If banco <> "SICOOB" Then
+           cpfCnpjServico = cpfCnpjServicoOrig
+        End If
+        
+        
+        
+        ' Boleto
+        If Not ConciliadoExt = "CONCILIADO" Then
+            If CStr(wsExtratos.Cells(j, "F").Value) Like "*" & cpfCnpjServico & "*" Then
+                dataExtrato = wsExtratos.Cells(j, "D").Value ' Supondo que a data do extrato esteja na coluna A
+                valorExtrato = CDbl(wsExtratos.Cells(j, "G").Value) ' Valor do extrato
+
+                ' Verificar se a data do extrato está dentro do intervalo de 10 dias
+                If IsDate(dataExtrato) Then
+                    If Abs(DateDiff("d", dataServico, dataExtrato)) <= 32 Then
+                        ' Validar se o valor do extrato está entre o valor do serviço e o valor líquido
+                        If (valorExtrato) >= (valorLiquido - 5) And valorExtrato <= (valorServico + 10) Then
+                            ' Traz o valor do extrato para a coluna "N" da planilha "servico"
+                            wsServico.Cells(i, "T").Value = dataExtrato
+                            wsServico.Cells(i, "U").Value = banco
+                            wsServico.Cells(i, "V").Value = valorExtrato
+                            wsServico.Cells(i, "Y").Value = "CONCILIADO"
+                            wsServico.Cells(i, "Z").Value = identificacao
+                            wsExtratos.Cells(j, "I").Value = "CONCILIADO"
+                            wsExtratos.Cells(j, "J").Value = identificacao
+                            wsExtratos.Cells(j, "K").Value = "NFS-e " & NOTA
+                            wsExtratos.Cells(j, "S").Value = "CONCILIADO"
+                               If Len(cpfCnpjServicoOrig) < 11 Then
+                                 cpfCnpj = Format(cpfCnpjServicoOrig, "00000000000")
+                                ElseIf Len(cpfCnpjServicoOrig) > 11 And Len(cpfCnpjServicoOrig) < 15 Then
+                                 cpfCnpj = Format(cpfCnpjServicoOrig, "00000000000000")
+                                Else
+                                 cpfCnpj = Format(cpfCnpjServicoOrig, "00000000000000")
+                                End If
+                                wsExtratos.Cells(j, "N").Value = cpfCnpj
+                                wsExtratos.Cells(j, "O").Value = wsExtratos.Cells(j, "F").Value & " NFS-e" & " " & NOTA
+                                
+                            Exit For ' Se encontrar, sai do loop
+                        End If
+                    End If
+                End If
+            
+            ' Se o CNPJ não for encontrado, verificar a razão social
+            ElseIf Len(razaoSocialServico) > 0 Then
+                If UCase(CStr(wsExtratos.Cells(j, "F").Value)) Like "*" & razaoSocialServico & "*" Then
+                    dataExtrato = wsExtratos.Cells(j, "D").Value
+                    valorExtrato = CDbl(wsExtratos.Cells(j, "G").Value)
+                    
+                    ' Verificar se a data do extrato está dentro do intervalo de 10 dias
+                    If IsDate(dataExtrato) Then
+                        If Abs(DateDiff("d", dataServico, dataExtrato)) <= 32 Then
+                            ' Validar se o valor do extrato está entre o valor do serviço e o valor líquido
+                            If (valorExtrato) >= (valorLiquido - 5) And valorExtrato <= (valorServico + 10) Then
+                                wsServico.Cells(i, "T").Value = dataExtrato
+                                wsServico.Cells(i, "U").Value = banco
+                                wsServico.Cells(i, "V").Value = valorExtrato
+                                wsServico.Cells(i, "Y").Value = "CONCILIADO"
+                                wsServico.Cells(i, "Z").Value = identificacao
+                                wsExtratos.Cells(j, "I").Value = "CONCILIADO"
+                                wsExtratos.Cells(j, "J").Value = identificacao
+                                wsExtratos.Cells(j, "K").Value = "NFS-e " & NOTA
+                                wsExtratos.Cells(j, "S").Value = "CONCILIADO"
+                                   If Len(cpfCnpjServicoOrig) < 11 Then
+                                 cpfCnpj = Format(cpfCnpjServicoOrig, "00000000000")
+                                ElseIf Len(cpfCnpjServicoOrig) > 11 And Len(cpfCnpjServicoOrig) < 15 Then
+                                 cpfCnpj = Format(cpfCnpjServicoOrig, "00000000000000")
+                                Else
+                                 cpfCnpj = Format(cpfCnpjServicoOrig, "00000000000000")
+                                End If
+                                wsExtratos.Cells(j, "N").Value = cpfCnpj
+                                wsExtratos.Cells(j, "O").Value = wsExtratos.Cells(j, "F").Value & " NFS-e" & " " & NOTA
+                                Exit For ' Se encontrar, sai do loop
+                            End If
+                        End If
+                    End If
+                Else
+                
+                
+                        discriminacao = CStr(wsServico.Cells(i, "P").Value)
+                        inicio = InStr(1, discriminacao, "(")
+                                                
+                        'fim = InStr(inicio, discriminacao, ")")
+                        
+                         If inicio > 0 Then
+                            inicio = inicio
+                         Else
+                            inicio = 0
+                        End If
+                        
+                        If inicio > 0 Then
+                             fim = InStr(inicio, discriminacao, ")")
+                        Else
+                             fim = 0
+                        End If
+                        
+                        inicio = InStr(1, discriminacao, "Aluno(a): (") + Len("Aluno(a): (")
+                        fim = InStr(inicio, discriminacao, ")")
+                        
+                        
+                        If inicio > 0 And fim > 0 Then
+                         ' Extrair o nome completo entre parênteses
+                        razaoSocialServicoDisc = UCase(Mid(discriminacao, inicio, fim - inicio))
+                        Else
+                        razaoSocialServicoDisc = discriminacao
+                        End If
+                        
+                        
+                        
+                        If UCase(CStr(wsExtratos.Cells(j, "F").Value)) Like "*" & razaoSocialServicoDisc & "*" Then
+                         dataExtrato = wsExtratos.Cells(j, "D").Value
+                         valorExtrato = CDbl(wsExtratos.Cells(j, "G").Value)
+                        
+                          ' Verificar se a data do extrato está dentro do intervalo de 10 dias
+                          If IsDate(dataExtrato) Then
+                            If Abs(DateDiff("d", dataServico, dataExtrato)) <= 32 Then
+                                
+                                ' Validar se o valor do extrato está entre o valor do serviço e o valor líquido
+                                If (valorExtrato) >= (valorLiquido - 5) And valorExtrato <= valorServico Then
+                                    ' Traz o valor do extrato para a coluna "N" da planilha "servico"
+                                    wsServico.Cells(i, "T").Value = dataExtrato
+                                     wsServico.Cells(i, "U").Value = banco
+                                     wsServico.Cells(i, "V").Value = valorExtrato
+                                     wsServico.Cells(i, "Y").Value = "CONCILIADO"
+                                     wsServico.Cells(i, "Z").Value = identificacao
+                                     wsExtratos.Cells(j, "I").Value = "CONCILIADO"
+                                     wsExtratos.Cells(j, "J").Value = identificacao
+                                     wsExtratos.Cells(j, "K").Value = "NFS-e" & " " & NOTA
+                                     wsExtratos.Cells(j, "S").Value = "CONCILIADO"
+                                 If Len(cpfCnpjServicoOrig) <= 11 Then
+                                 cpfCnpj = Format(cpfCnpjServicoOrig, "00000000000")
+                                ElseIf Len(cpfCnpjServicoOrig) > 11 And Len(cpfCnpjServicoOrig) < 15 Then
+                                 cpfCnpj = Format(cpfCnpjServicoOrig, "00000000000000")
+                                Else
+                                 cpfCnpj = Format(cpfCnpjServicoOrig, "00000000000000")
+                                End If
+                                wsExtratos.Cells(j, "N").Value = cpfCnpj
+                                wsExtratos.Cells(j, "O").Value = wsExtratos.Cells(j, "F").Value & " NFS-e" & " " & NOTA
+                                     
+
+                                    Exit For ' Se encontrar, sai do loop
+                                End If
+                            End If
+                        End If
+                        Else    'por aproximacao ja q o nome inteiro nao localizou
+                        
+                        razaoSocialServicoFormatado = FormatarNome(razaoSocialServico)
+                        If UCase(CStr(wsExtratos.Cells(j, "F").Value)) Like "*" & razaoSocialServicoFormatado & "*" Then
+                           If (valorExtrato) >= (valorLiquido - 5) And valorExtrato <= valorServico Then
+                                    ' Traz o valor do extrato para a coluna "N" da planilha "servico"
+                                     wsServico.Cells(i, "T").Value = dataExtrato
+                                     wsServico.Cells(i, "U").Value = banco
+                                     wsServico.Cells(i, "V").Value = valorExtrato
+                                     wsServico.Cells(i, "Y").Value = "CONCILIADO"
+                                     wsServico.Cells(i, "Z").Value = identificacao
+                                     wsExtratos.Cells(j, "I").Value = "CONCILIADO"
+                                     wsExtratos.Cells(j, "J").Value = identificacao
+                                     wsExtratos.Cells(j, "K").Value = "NFS-e" & " " & NOTA
+                                     wsExtratos.Cells(j, "S").Value = "CONCILIADO"
+                                       If Len(cpfCnpjServicoOrig) < 11 Then
+                                 cpfCnpj = Format(cpfCnpjServicoOrig, "00000000000")
+                                ElseIf Len(cpfCnpjServicoOrig) > 11 And Len(cpfCnpjServicoOrig) < 15 Then
+                                 cpfCnpj = Format(cpfCnpjServicoOrig, "00000000000000")
+                                Else
+                                 cpfCnpj = Format(cpfCnpjServicoOrig, "00000000000000")
+                                End If
+                                wsExtratos.Cells(j, "N").Value = cpfCnpj
+                                wsExtratos.Cells(j, "O").Value = wsExtratos.Cells(j, "F").Value & " NFS-e" & " " & NOTA
+
+                                    Exit For ' Se encontrar, sai do loop
+                                End If
+                           
+                        End If
+                        
+                        
+                        
+                    End If 'fim do if por discriminacao
+                End If
+            End If
+        End If
+    Next j
+                ' Fim do Loop através da planilha "ExtratosBancarios"
+End If
+
+          
+            
+          
+        End If
+        End If ' fim da verificacao de conciliacao
+        
+           If formaPgto = "Dinheiro" Or formaPgto = "DINHEIRO" Or formaPgto = "DH" Or formaPgto = "Dh" Or formaPgto = "dh" Then
+                  CONCIL = wsServico.Cells(i, "Y").Value
+                  
+                  If Not CONCIL Like "CONCILIADO*" Then
+
+                  wsServico.Cells(i, "T").Value = wsServico.Cells(i, "B").Value
+                  wsServico.Cells(i, "U").Value = "DINHEIRO"
+                  wsServico.Cells(i, "V").Value = wsServico.Cells(i, "O").Value
+                  wsServico.Cells(i, "Y").Value = "CONCILIADO"
+                  wsServico.Cells(i, "Z").Value = wsServico.Cells(i, "A").Value
+                               If Len(cpfCnpjServicoOrig) < 11 Then
+                                 cpfCnpj = Format(cpfCnpjServicoOrig, "00000000000")
+                                ElseIf Len(cpfCnpjServicoOrig) > 11 And Len(cpfCnpjServicoOrig) < 15 Then
+                                 cpfCnpj = Format(cpfCnpjServicoOrig, "00000000000000")
+                                Else
+                                 cpfCnpj = Format(cpfCnpjServicoOrig, "00000000000000")
+                                End If
+                                
+                                wsDH_NF_IMPORTAR.Rows(2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+                                wsDH_NF_IMPORTAR.Cells(2, 1).Value = wsServico.Cells(i, "B").Value
+                                wsDH_NF_IMPORTAR.Cells(2, 2).Value = cpfCnpj
+                                wsDH_NF_IMPORTAR.Cells(2, 3).Value = "VLR REF A RECEB EM DH CONF NFS-e " & NOTA & " " & wsServico.Cells(i, "D").Value
+                                wsDH_NF_IMPORTAR.Cells(2, 4).Value = wsServico.Cells(i, "O").Value
+                                wsDH_NF_IMPORTAR.Cells(2, 5).Value = 0
+                                wsDH_NF_IMPORTAR.Cells(2, 6).Value = 0
+                                wsDH_NF_IMPORTAR.Cells(2, 7).Value = 0
+                                wsDH_NF_IMPORTAR.Cells(2, 8).Value = "CONCILIADO-DH"
+                                
+                End If
+
+                  
+                  
+              End If
+              
+              If Not IsEmpty(temDataCancelamento) Then
+                    wsServico.Cells(i, "Y").Value = "CANCELADA"
+                    wsServico.Cells(i, "Z").Value = wsServico.Cells(i, "A").Value
+              
+              
+              
+              End If
+          
+        
+        
+        
+      
+               
+    Next i
+  
+    MsgBox "Processo concluído!"
+    
+    ' Reativar eventos e atualização de tela
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+
+    Exit Sub
+
+ErrorHandler:
+    MsgBox "Erro: Verifique os nomes das planilhas ou os dados: " & Err.Description
+
+End Sub
