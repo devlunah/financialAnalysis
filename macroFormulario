@@ -9,9 +9,7 @@ Private Sub CommandButton1_Click()
 Dim modFileBrowser As String
 
     With Application.FileDialog(msoFileDialogFolderPicker)
-        ' Permitir apenas a seleção de uma pasta
         .AllowMultiSelect = False
-        ' Mostrar a janela
         .Show
 
         If .SelectedItems.Count > 0 Then
@@ -24,10 +22,6 @@ Dim modFileBrowser As String
 End Sub
 
 Private Sub CommandButton2_Click()
-
-'quero colocar aqui toda a lógica para que ao selecionar um determinado mês o programa selecione
-'todas as células que estão dentro desse mês e copie para outra planilha
-'e depois essa outra planilha vai ser copiada novamente para uma planilha xlsx
 
 Dim mes_selecionado As String
 Dim i As Long
